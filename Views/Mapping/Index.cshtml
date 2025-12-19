@@ -1,0 +1,248 @@
+﻿@{
+    ViewData["Title"] = "Course Management";
+}
+
+<h2>Course Management</h2>
+
+
+<button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#courseModal">
+    Add Course
+</button>
+
+
+<div class="modal fade" id="courseModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Add Course</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <input type="text" id="txtCourseName" class="form-control mb-2" placeholder="Course Name" />
+                <input type="text" id="txtCourseCode" class="form-control" placeholder="Course Code" />
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-success" onclick="saveCourse()">Save</button>
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<hr />
+
+<h2>Student Course Mapping</h2>
+
+<div class="row mb-3">
+    <div class="col-md-4">
+        <input type="text" id="txtStudent" class="form-control" placeholder="Select Student" />
+        <input type="hidden" id="hdnStudentId" />
+    </div>
+
+    <div class="col-md-4">
+        <input type="text" id="txtCourse" class="form-control" placeholder="Select Course" />
+        <input type="hidden" id="hdnCourseId" />
+    </div>
+
+    <div class="col-md-4">
+        <button class="btn btn-success" onclick="mapStudentCourse()">Map</button>
+    </div>
+</div>
+
+<table class="table table-bordered" id="mappingTable">
+    <thead>
+        <tr>
+            <th>Student Name</th>
+            <th>Course Name</th>
+            <th>Course Code</th>
+           
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+
+
+
+@section Scripts {
+
+
+    <!-- jQuery UI -->
+    <link rel="stylesheet"
+          href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css" />
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+
+            // STUDENT AUTOCOMPLETE
+            $("#txtStudent").autocomplete({
+                minLength: 1,
+                source: function (request, response) {
+                    $.ajax({
+                        url: '/Mapping/GetStudents',
+                        type: 'GET',
+                        data: { term: request.term },
+                        success: function (data) {
+                            response(data);
+                        }
+                    });
+                },
+                select: function (event, ui) {
+                    $("#txtStudent").val(ui.item.label);
+                    $("#hdnStudentId").val(ui.item.value);
+                    return false;
+                }
+            });
+
+        });
+
+        // SAVE COURSE
+        function saveCourse() {
+            var course = {
+                CourseName: $('#txtCourseName').val(),
+                CourseCode: $('#txtCourseCode').val()
+            };
+
+            $.ajax({
+                url: '/Mapping/AddCourse',
+                type: 'POST',
+                data: course,
+                success: function (res) {
+                    alert(res);
+                    $('#courseModal').modal('hide');
+                    $('#txtCourseName').val('');
+                    $('#txtCourseCode').val('');
+                },
+                error: function () {
+                    alert('Error saving course');
+                }
+            });
+        }
+
+
+               function mapStudentCourse() {
+
+            var studentId = $("#hdnStudentId").val();
+            var courseId = $("#hdnCourseId").val();
+
+            if (studentId == "" || courseId == "") {
+                alert("Please select both student and course");
+                return;
+            }
+
+            $.ajax({
+                url: '/Mapping/MapStudentCourse',
+                type: 'POST',
+                data: {
+                    StudentId: studentId,
+                    CourseId: courseId
+                },
+                success: function (res) {
+                    alert(res);
+
+                    
+                    $("#txtStudent").val('');
+                    $("#txtCourse").val('');
+                    $("#hdnStudentId").val('');
+                    $("#hdnCourseId").val('');
+                },
+                error: function () {
+                    alert('Mapping failed');
+                }
+            });
+        }
+
+
+
+$("#txtCourse").autocomplete({
+    minLength: 1,
+    source: function (request, response) {
+        $.ajax({
+            url: '/Mapping/GetCourses',
+            type: 'GET',
+            data: { term: request.term },
+            success: function (data) {
+                response(data);
+            }
+        });
+    },
+    select: function (event, ui) {
+        $("#txtCourse").val(ui.item.label);
+        $("#hdnCourseId").val(ui.item.value);
+        return false;
+    }
+});
+
+
+
+        $(document).ready(function () {
+            loadMappings();
+        });
+
+        function loadMappings() {
+            $.ajax({
+                url: '/Mapping/GetMappings',
+                type: 'GET',
+                success: function (data) {
+                    let rows = '';
+                    $.each(data, function (i, item) {
+                        rows += `<tr>
+                                    <td>${item.studentName}</td>
+                                    <td>${item.courseName}</td>
+                                    <td>${item.courseCode}</td>
+                                    
+                                 </tr>`;
+                    });
+                    $('#mappingTable tbody').html(rows);
+                },
+                error: function () {
+                    alert('Error loading mappings');
+                }
+            });
+        }
+
+
+                       function mapStudentCourse() {
+
+            var studentId = $("#hdnStudentId").val();
+            var courseId = $("#hdnCourseId").val();
+
+            if (studentId == "" || courseId == "") {
+                alert("Please select both student and course");
+                return;
+            }
+
+            $.ajax({
+                url: '/Mapping/MapStudentCourse',
+                type: 'POST',
+                data: {
+                    studentId: studentId,
+                    courseId: courseId
+                },
+                success: function (res) {
+                    alert(res);
+                    loadMappings();
+
+                    $("#txtStudent").val('');
+                    $("#txtCourse").val('');
+                    $("#hdnStudentId").val('');
+                    $("#hdnCourseId").val('');
+                },
+                error: function (xhr) {
+                    console.log(xhr.responseText);
+                    alert(xhr.responseText);
+                }
+            });
+        }
+
+
+
+
+
+    </script>
+}

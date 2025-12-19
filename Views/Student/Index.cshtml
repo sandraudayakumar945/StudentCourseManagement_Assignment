@@ -1,0 +1,241 @@
+﻿@{
+    ViewData["Title"] = "Student Management";
+}
+
+<h2>Student Management</h2>
+
+
+<div class="mb-3">
+    <input type="text" id="txtName" class="form-control mb-2" placeholder="Student Name" />
+    <input type="text" id="txtPhone" class="form-control mb-2" placeholder="Phone Number" />
+    <input type="email" id="txtEmail" class="form-control mb-2" placeholder="Email ID" />
+    <input type="hidden" id="hdnStudentId" />
+
+    <button class="btn btn-success" onclick="saveStudent()" id="btnSave">
+        Add Student
+    </button>
+   
+</div>
+
+
+<input type="text"
+       id="txtSearch"
+       class="form-control mb-3"
+       placeholder="Search by Name / Phone / Email"
+       onkeyup="searchStudent()" />
+
+
+<table class="table table-bordered" id="studentTable">
+    <thead>
+        <tr>
+            <th>Student Name</th>
+            <th>Phone Number</th>
+            <th>Email ID</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+    </tbody>
+</table>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            loadStudents();
+        });
+
+        function loadStudents() {
+            $.ajax({
+                url: '/Student/GetStudents',
+                type: 'GET',
+                success: function (data) {
+                    var rows = '';
+                    $.each(data, function (i, student) {
+                        rows += `<tr>
+                                    <td>${student.studentName}</td>
+                                    <td>${student.phoneNumber}</td>
+                                    <td>${student.emailId}</td>
+                                    <td>
+
+
+                                     <button class="btn btn-sm btn-primary"
+                                         onclick="editStudent(this)"
+                                         data-id="${student.studentId}"
+                                         data-name="${student.studentName}"
+                                         data-phone="${student.phoneNumber}"
+                                         data-email="${student.emailId}">
+                                              Edit
+                                     </button>
+
+
+                 
+                                        <button class="btn btn-sm btn-danger"
+                                          onclick="deleteStudent(${student.studentId})">
+                                          Delete
+                                        </button>
+            
+
+                                    </td>
+                                 </tr>`;
+                    });
+                    $('#studentTable tbody').html(rows);
+                },
+                error: function () {
+                    alert('Error loading students');
+                }
+            });
+        }
+
+
+
+                function searchStudent() {
+            var keyword = $('#txtSearch').val();
+
+            $.ajax({
+                url: '/Student/SearchStudent',
+                type: 'GET',
+                data: { searchText: keyword },
+                success: function (data) {
+                    var rows = '';
+                    $.each(data, function (i, student) {
+                        rows += `<tr>
+                                    <td>${student.studentName}</td>
+                                    <td>${student.phoneNumber}</td>
+                                    <td>${student.emailId}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-primary"
+                                                onclick="editStudent(this)"
+                                                data-id="${student.studentId}"
+                                                data-name="${student.studentName}"
+                                                data-phone="${student.phoneNumber}"
+                                                data-email="${student.emailId}">
+                                            Edit
+                                        </button>
+                                        <button class="btn btn-sm btn-danger"
+                                                onclick="deleteStudent(${student.studentId})">
+                                            Delete
+                                        </button>
+                                    </td>
+                                 </tr>`;
+                    });
+                    $('#studentTable tbody').html(rows);
+                },
+                error: function () {
+                    alert('Search failed');
+                }
+            });
+        }
+
+
+
+               
+                     function deleteStudent(id) {
+                       if (confirm("Delete this student?")) {
+                        $.ajax({
+                         url: '/Student/DeleteStudent',
+                         type: 'POST',
+                         data: { id: id },
+                         success: function () {
+                         alert("Deleted successfully");
+                         loadStudents(); 
+                    },
+                        error: function (xhr) {
+                        alert(xhr.responseText);
+                    }
+                });
+            }
+        }
+   
+
+
+
+                function addStudent() {
+            var student = {
+                StudentName: $('#txtName').val(),
+                PhoneNumber: $('#txtPhone').val(),
+                EmailId: $('#txtEmail').val()
+            };
+
+            $.ajax({
+                url: '/Student/AddStudent',
+                type: 'POST',
+                data: student,
+                success: function (res) {
+                    alert(res);
+                    loadStudents();
+
+                    $('#txtName').val('');
+                    $('#txtPhone').val('');
+                    $('#txtEmail').val('');
+                },
+                       error: function (xhr) {
+            alert(xhr.responseText);
+        }
+
+            });
+        }
+
+                function editStudent(btn) {
+            var id = $(btn).data('id');
+            var name = $(btn).data('name');
+            var phone = $(btn).data('phone');
+            var email = $(btn).data('email');
+
+            $('#hdnStudentId').val(id);
+            $('#txtName').val(name);
+            $('#txtPhone').val(phone);
+            $('#txtEmail').val(email);
+
+            $('#btnSave').text('Update Student');
+        }
+
+
+                         function saveStudent() {
+            var id = $('#hdnStudentId').val();
+
+            if (id == "") {
+                addStudent();   
+            } else {
+                updateStudent(); 
+            }
+        }
+
+
+
+                function updateStudent() {
+            var student = {
+                StudentId: $('#hdnStudentId').val(),
+                StudentName: $('#txtName').val(),
+                PhoneNumber: $('#txtPhone').val(),
+                EmailId: $('#txtEmail').val()
+            };
+
+            $.ajax({
+                url: '/Student/UpdateStudent',
+                type: 'POST',
+                data: student,
+                success: function (res) {
+                    alert(res);
+                    loadStudents();
+
+                   
+                    $('#hdnStudentId').val('');
+                    $('#txtName').val('');
+                    $('#txtPhone').val('');
+                    $('#txtEmail').val('');
+                    $('#btnSave').text('Add Student');
+                },
+                error: function () {
+                    alert('Update failed');
+                }
+            });
+        }
+
+
+
+
+    </script>
+}
+
